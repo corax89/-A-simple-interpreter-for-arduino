@@ -494,20 +494,17 @@ String execut(String str) {
 
 void setup() {
   Serial.begin(9600);
+  Serial.setTimeout(250);
   Serial.println(F("input 'print(1+2);' for test"));
 }
 
 void loop() {
-  if(Serial.available()) {
-    char inChar = (char)Serial.read();
-    if (inChar == '\n') {
-      Serial.print(">");
-      Serial.println(serialData);
-      serialData +=";";
-      Serial.println(execut(compile(serialData)));
-      serialData="";
-    }
-    else
-      serialData += inChar;
+  while(Serial.available()) {
+    serialData = Serial.readString(); 
+    Serial.print(">");
+    Serial.println(serialData);
+    serialData +=";";
+    Serial.println(execut(compile(serialData)));
+    serialData="";
   }
 }
