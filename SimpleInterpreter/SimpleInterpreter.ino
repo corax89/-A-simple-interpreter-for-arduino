@@ -96,7 +96,11 @@ String compile(String s) {
 				thisrang = 5;
 				break;
 			case '=':
-				thisrang = 6;
+				if(s[i+1]=='='){
+				  i++;
+				  thisrang = 3;}
+				else
+				  thisrang = 6;
 				break;
 			case ' ':
 				thisrang = 7;
@@ -310,7 +314,7 @@ String compile(String s) {
 				out = out + token[i];
 				//для выравнивания адреса длина строки должна быть кратна 2
 				if(token[i].length() % 2 > 0)
-					out += '"';
+					out += '_';
 			} else if(rang[i] == 13) {
 				openBrakket[brakketCount] = out.length();
 				brakketCount++;
@@ -371,7 +375,7 @@ String execut(String str) {
 					else
 						break;
 				}
-				if(str[j + 1] == '"')
+				if(str[j + 1] == '_')
 					j++;
 				count = j / 2;
 				stackCount++;
@@ -538,7 +542,19 @@ String execut(String str) {
 					}
 				case '!':
 					{
-						stack[stackCount - 1].value = (int) stack[stackCount - 1].value != stack[stackCount].value;
+						if(stack[stackCount - 1].type==1 && stack[stackCount].type==1)
+						  stack[stackCount - 1].value = (int) stack[stackCount - 1].svalue != stack[stackCount].svalue;
+						else
+						  stack[stackCount - 1].value = (int) stack[stackCount - 1].value != stack[stackCount].value;
+						stack[stackCount - 1].type = 0;
+						break;
+					}
+				case '=':
+					{
+						if(stack[stackCount - 1].type==1 && stack[stackCount].type==1)
+						  stack[stackCount - 1].value = (int) stack[stackCount - 1].svalue == stack[stackCount].svalue;
+						else
+						  stack[stackCount - 1].value = (int) stack[stackCount - 1].value == stack[stackCount].value;
 						stack[stackCount - 1].type = 0;
 						break;
 					}
