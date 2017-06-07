@@ -530,31 +530,31 @@ String execut(String str) {
 					}
 				case '>':
 					{
-						stack[stackCount - 1].value = (int) stack[stackCount - 1].value > stack[stackCount].value;
+						stack[stackCount - 1].value = (int) (stack[stackCount - 1].value > stack[stackCount].value);
 						stack[stackCount - 1].type = 0;
 						break;
 					}
 				case '<':
 					{
-						stack[stackCount - 1].value = (int) stack[stackCount - 1].value < stack[stackCount].value;
+						stack[stackCount - 1].value = (int) (stack[stackCount - 1].value < stack[stackCount].value);
 						stack[stackCount - 1].type = 0;
 						break;
 					}
 				case '!':
 					{
 						if(stack[stackCount - 1].type==1 && stack[stackCount].type==1)
-						  stack[stackCount - 1].value = (int) stack[stackCount - 1].svalue != stack[stackCount].svalue;
+						  stack[stackCount - 1].value = (int) (stack[stackCount - 1].svalue != stack[stackCount].svalue);
 						else
-						  stack[stackCount - 1].value = (int) stack[stackCount - 1].value != stack[stackCount].value;
+						  stack[stackCount - 1].value = (int) (stack[stackCount - 1].value != stack[stackCount].value);
 						stack[stackCount - 1].type = 0;
 						break;
 					}
 				case '=':
 					{
 						if(stack[stackCount - 1].type==1 && stack[stackCount].type==1)
-						  stack[stackCount - 1].value = (int) stack[stackCount - 1].svalue == stack[stackCount].svalue;
+						  stack[stackCount - 1].value = (int) (stack[stackCount - 1].svalue == stack[stackCount].svalue);
 						else
-						  stack[stackCount - 1].value = (int) stack[stackCount - 1].value == stack[stackCount].value;
+						  stack[stackCount - 1].value = (int) (stack[stackCount - 1].value == stack[stackCount].value);
 						stack[stackCount - 1].type = 0;
 						break;
 					}
