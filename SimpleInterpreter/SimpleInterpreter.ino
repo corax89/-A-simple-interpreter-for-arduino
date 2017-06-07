@@ -1,47 +1,53 @@
-#define STEKLENGTH 8
+#define STACKLENGTH 8
 #define TOKENLENGTH 12
 #define BRAKKETLENGTH 8
-#define VARLENGTH 16
-#define PUSH_STACK(a,b) stek[stekCount]=a;stekRang[stekCount]=b;stekCount++;
+#define VARLENGTH 12
+#define PUSH_STACK(a,b) stack[stackCount]=a;stackRang[stackCount]=b;stackCount++;
 
 String serialData;
 
+typedef struct {
+	String svalue;
+	int value;
+	byte type;
+}Var;
+
 String toFourHex(String num) {
-  String s = String(num.toInt(), HEX);
-  while(s.length() < 4) s = "0" + s;
-  return s;
+	String s = String(num.toInt(), HEX);
+	while(s.length() < 4) s = "0" + s;
+	return s;
 }
 
 int hexToDec(String hexString) {
-  int decValue = 0;
-  byte nextInt;
-  for(int i = 0; i < hexString.length(); i++) {
-    nextInt = byte(hexString.charAt(i));
-    if(nextInt >= 48 && nextInt <= 57) nextInt -= 48;
-    else if(nextInt >= 65 && nextInt <= 70) nextInt -= 55;
-    else if(nextInt >= 97 && nextInt <= 102) nextInt -= 87;
-    if(nextInt > 15) return 0;
-    decValue = (decValue << 4) + nextInt;
-  }
-  return decValue;
+	int decValue = 0;
+	byte nextInt;
+	for(int i = 0; i < hexString.length(); i++) {
+		nextInt = byte(hexString.charAt(i));
+		if(nextInt >= 48 && nextInt <= 57) nextInt -= 48;
+		else if(nextInt >= 65 && nextInt <= 70) nextInt -= 55;
+		else if(nextInt >= 97 && nextInt <= 102) nextInt -= 87;
+		if(nextInt > 15) return 0;
+		decValue = (decValue << 4) + nextInt;
+	}
+	return decValue;
 }
 
 String compile(String s) {
 	String out = "";
 	String varArray[VARLENGTH];
-	String stek[STEKLENGTH];
+	String stack[STACKLENGTH];
 	String token[TOKENLENGTH];
 	int openBrakket[BRAKKETLENGTH];
 	int varArrayCount = -1;
 	int i = 0;
 	int j = 0;
 	int lastChar = 0;
-	byte stekRang[STEKLENGTH];
+	byte stackRang[STACKLENGTH];
 	byte rang[TOKENLENGTH];
 	byte brakketCount = 0;
 	byte thisrang;
 	byte count = 0;
-	byte stekCount = 0;
+	byte stackCount = 0;
 	token[0] = "";
 	while(lastChar < s.length()) {
 		count = 0;
@@ -65,11 +71,20 @@ String compile(String s) {
 				thisrang = 2;
 				break;
 			case '*':
-			case '/':
 			case '>':
 			case '<':
 			case '!':
 				thisrang = 3;
+				break;
+			case '/':
+				if(s[i + 1] == '/') {
+					for(i; i < s.length(); i++) {
+						if(s[i] == '\n') break;
+					}
+					thisrang = 8;
+					count++;
+				} else
+					thisrang = 3;
 				break;
 			case '(':
 				thisrang = 0;
@@ -130,31 +145,31 @@ String compile(String s) {
 				}
 			} else if(thisrang == 4) {
 				//выталкиваем все до ближайшей открывающей скобки и удаляем ее
-				for(j = stekCount - 1; j >= 0; j--) {
-					if(stekRang[j] > 0) {
+				for(j = stackCount - 1; j >= 0; j--) {
+					if(stackRang[j] > 0) {
 						count++;
-						token[count] = stek[j];
-						stek[j] = "";
-						if(stekRang[j] > 1)
-							rang[count] = stekRang[j];
+						token[count] = stack[j];
+						stack[j] = "";
+						if(stackRang[j] > 1)
+							rang[count] = stackRang[j];
 						else
 							rang[count] = 9;
-						stekCount--;
+						stackCount--;
 					} else {
-						stek[j] = "";
-						stekCount--;
+						stack[j] = "";
+						stackCount--;
 						j = -1;
 					}
 				}
 			} else if(thisrang == 5) {
 				//выталкиваем все до ближайшей открывающей скобки но не удаляем ее
-				for(j = stekCount - 1; j >= 0; j--) {
-					if(stekRang[j] > 1) {
+				for(j = stackCount - 1; j >= 0; j--) {
+					if(stackRang[j] > 1) {
 						count++;
-						token[count] = stek[j];
-						stek[j] = "";
-						rang[count] = stekRang[j];
-						stekCount--;
+						token[count] = stack[j];
+						stack[j] = "";
+						rang[count] = stackRang[j];
+						stackCount--;
 					} else {
 						j = -1;
 						count++;
@@ -184,13 +199,13 @@ String compile(String s) {
 				//пропускаем пробел
 			} else if(thisrang == 8) {
 				//обрабатываем конец строки
-				for(j = stekCount - 1; j >= 0; j--) {
-					token[count] = stek[j];
-					rang[count] = stekRang[j];
+				for(j = stackCount - 1; j >= 0; j--) {
+					token[count] = stack[j];
+					rang[count] = stackRang[j];
 					count++;
-					stek[j] = "";
+					stack[j] = "";
 				}
-				stekCount = 0;
+				stackCount = 0;
 				//назначаем отдельные ранги фигурным скобкам
 				if(s[i] == '{') {
 					token[count] = "{";
@@ -202,9 +217,9 @@ String compile(String s) {
 					count++;
 				}
 			} else if(thisrang == 9) {
-				//функция для печати строки, помещаем за ней строку в двойных кавычках
-				stekCount = 0;
-				token[count] = "PT\"";
+				//сохранение строки
+				//stackCount = 0;
+				token[count] = "\"";
 				rang[count] = 12;
 				count++;
 				for(j = i + 1; j < s.length(); j++) {
@@ -215,13 +230,13 @@ String compile(String s) {
 				i = j;
 			} else if(thisrang > 1) {
 				if(rang[count] <= thisrang) {
-					for(j = stekCount - 1; j >= 0; j--) {
-						if(stekRang[j] >= thisrang) {
+					for(j = stackCount - 1; j >= 0; j--) {
+						if(stackRang[j] >= thisrang) {
 							count++;
-							token[count] = stek[j];
-							stek[j] = "";
-							rang[count] = stekRang[j];
-							stekCount--;
+							token[count] = stack[j];
+							stack[j] = "";
+							rang[count] = stackRang[j];
+							stackCount--;
 						} else
 							j = -1;
 					}
@@ -229,15 +244,15 @@ String compile(String s) {
 				PUSH_STACK(String(s[i]), thisrang);
 				count++;
 			}
-			if(s[i] == ';' || s[i] == '{' || i==s.length()-1) {
+			if(s[i] == ';' || s[i] == '{' || i == s.length() - 1) {
 				lastChar = i + 1;
 				break;
 			}
 		}
 		//на всякий случай выталкиваем все что осталось в стеке
-		for(j = stekCount - 1; j >= 0; j--) {
+		for(j = stackCount - 1; j >= 0; j--) {
 			count++;
-			token[count] = stek[j];
+			token[count] = stack[j];
 		}
 		for(i = 0; i <= count; i++) {
 			if(rang[i] == 1) {
@@ -317,184 +332,227 @@ String compile(String s) {
 	}
 	return out;
 }
-
 String execut(String str) {
-  int count = 0;
-  int stek[STEKLENGTH];
-  byte stekCount = 0;
-  int endbyte = str.length() / 2;
-  int stekBufer;
-  int variable[VARLENGTH];
-  char byte1;
-  char byte2;
-  String out;
-  for(count = 0; count < endbyte; count++) {
-    byte1 = str[count * 2];
-    byte2 = str[count * 2 + 1];
-    switch(byte1) {
-    case '#':
-      {
-        switch(byte2) {
-        case 'G':
-          {
-            //go to
-            count++;
-            count = hexToDec(str.substring(count * 2, count * 2 + 4)) - 1;
-            break;
-          }
-        }
-        break;
-      }
-    case 'I':
-      {
-        switch(byte2) {
-        case 'F':
-          {
-            //if 
-            stekCount--;
-            if(stek[stekCount] > 0) {
-              count += 3;
-            }
-            break;
-          }
-        }
-        break;
-      }
-      //set
-    case 'S':
-      {
-        switch(byte2) {
-        case 'D':
-          {
-            //delay
-            stekCount--;
-            delay(stek[stekCount]);
-            break;
-          }
-        case 'V':
-          {
-            //set var
-            count++;
-            stekCount--;
-            variable[hexToDec(str.substring(count * 2, count * 2 + 4))] = stek[stekCount];
-            count++;
-            break;
-          }
-          break;
-        }
-        break;
-      }
-      //get
-    case 'G':
-      {
-        switch(byte2) {
-        case 'R':
-          {
-            //get random
-            stek[stekCount - 2] = random(stek[stekCount - 2], stek[stekCount - 1]);
-            stekCount--;
-            break;
-          }
-        case 'V':
-          {
-            //get var
-            count++;
-            stek[stekCount] = variable[hexToDec(str.substring(count * 2, count * 2 + 4))];
-            count++;
-            stekCount++;
-            break;
-          }
-        }
-        break;
-      }
-    case 'P':
-      {
-        switch(byte2) {
-        case 'I':
-          {
-            //push integer
-            count++;
-            stek[stekCount] = hexToDec(str.substring(count * 2, count * 2 + 4));
-            count++;
-            stekCount++;
-            break;
-          }
-        case 'R':
-          {
-            //print
-            stekCount--;
-            out += String(stek[stekCount]);
-            break;
-          }
-        case 'T':
-          {
-            //print text
-            int j = 0;
-            for(j = count * 2 + 3; j < str.length(); j++) {
-              if(str[j] != '"')
-                out += str[j];
-              else
-                break;
-            }
-            if(str[j + 1] == '"')
-              j++;
-            count = j / 2;
-            break;
-          }
-        }
-        break;
-      }
-    case 'A':
-      {
-        switch(byte2) {
-        case '+':
-          {
-            stekBufer = stek[stekCount - 2] + stek[stekCount - 1];
-            break;
-          }
-        case '-':
-          {
-            stekBufer = stek[stekCount - 2] - stek[stekCount - 1];
-            break;
-          }
-        case '*':
-          {
-            stekBufer = stek[stekCount - 2] * stek[stekCount - 1];
-            break;
-          }
-        case '/':
-          {
-            stekBufer = stek[stekCount - 2] / stek[stekCount - 1];
-            break;
-          }
-        case '>':
-          {
-            stekBufer = (int) stek[stekCount - 2] > stek[stekCount - 1];
-            break;
-          }
-        case '<':
-          {
-            stekBufer = (int) stek[stekCount - 2] < stek[stekCount - 1];
-            break;
-          }
-        case '!':
-          {
-            stekBufer = (int) stek[stekCount - 2] != stek[stekCount - 1];
-            break;
-          }
-        }
-        stekCount--;
-        stek[stekCount - 1] = stekBufer;
-        break;
-      }
-    }
-  }
-  return out;
+	int count = 0;
+	Var stack[STACKLENGTH];
+	byte stackCount = 0;
+	int endbyte = str.length() / 2;
+	int stackBufer;
+	Var variable[VARLENGTH];
+	char byte1;
+	char byte2;
+	String out;
+	for(count = 0; count < endbyte; count++) {
+		byte1 = str[count * 2];
+		byte2 = str[count * 2 + 1];
+		switch(byte1) {
+		case '#':
+			{
+				switch(byte2) {
+				case 'G':
+					{
+						//go to
+						count++;
+						count = hexToDec(str.substring(count * 2, count * 2 + 4)) - 1;
+						break;
+					}
+				}
+				break;
+			}
+		case '"':
+			{
+				//load string to stack
+				stack[stackCount].svalue = String(byte2);
+				stack[stackCount].type = 1;
+				int j = 0;
+				for(j = count * 2 + 2; j < str.length(); j++) {
+					if(str[j] != '"')
+						stack[stackCount].svalue += str[j];
+					else
+						break;
+				}
+				if(str[j + 1] == '"')
+					j++;
+				count = j / 2;
+				stackCount++;
+				break;
+			}
+		case 'I':
+			{
+				switch(byte2) {
+				case 'F':
+					{
+						//if 
+						stackCount--;
+						if(stack[stackCount].value > 0) {
+							count += 3;
+						}
+						break;
+					}
+				}
+				break;
+			}
+			//set
+		case 'S':
+			{
+				switch(byte2) {
+				case 'D':
+					{
+						//delay
+						stackCount--;
+						delay(stack[stackCount].value);
+						break;
+					}
+				case 'V':
+					{
+						//set var
+						count++;
+						stackCount--;
+						int vr = hexToDec(str.substring(count * 2, count * 2 + 4));
+						if(stack[stackCount].type == 0) {
+							variable[vr].type = 0;
+							variable[vr].value = stack[stackCount].value;
+							variable[vr].svalue = "";
+						} else {
+							variable[vr].type = 1;
+							variable[vr].svalue = stack[stackCount].svalue;
+							variable[vr].value = 0;
+						}
+						count++;
+						break;
+					}
+					break;
+				}
+				break;
+			}
+			//get
+		case 'G':
+			{
+				switch(byte2) {
+				case 'R':
+					{
+						//get random
+						stack[stackCount - 2].value = random(stack[stackCount - 2].value, stack[stackCount - 1].value);
+						stack[stackCount - 2].type = 0;
+						stackCount--;
+						break;
+					}
+				case 'V':
+					{
+						//get var
+						count++;
+						int vr = hexToDec(str.substring(count * 2, count * 2 + 4));
+						if(variable[vr].type == 0) {
+							stack[stackCount].value = variable[vr].value;
+							stack[stackCount].svalue = "";
+							stack[stackCount].type = 0;
+						} else {
+							stack[stackCount].svalue = variable[vr].svalue;
+							stack[stackCount].value = 0;
+							stack[stackCount].type = 1;
+						}
+						count++;
+						stackCount++;
+						break;
+					}
+				}
+				break;
+			}
+		case 'P':
+			{
+				switch(byte2) {
+				case 'I':
+					{
+						//push integer
+						count++;
+						stack[stackCount].type = 0;
+						stack[stackCount].value = hexToDec(str.substring(count * 2, count * 2 + 4));
+						count++;
+						stackCount++;
+						break;
+					}
+				case 'R':
+					{
+						//print
+						stackCount--;
+						if(stack[stackCount].type == 0)
+							out += String(stack[stackCount].value);
+						else
+							out += stack[stackCount].svalue;
+						break;
+					}
+				}
+				break;
+			}
+		case 'A':
+			{
+				stackCount--;
+				switch(byte2) {
+				case '+':
+					{
+						if(stack[stackCount - 1].type == 0 && stack[stackCount].type == 0)
+							//оба значения числовые
+							stack[stackCount - 1].value = stack[stackCount - 1].value + stack[stackCount].value;
+						else if(stack[stackCount - 1].type == 0 && stack[stackCount].type == 1) {
+							//первое значение числовое, второе строковое
+							stack[stackCount - 1].type = 1;
+							stack[stackCount - 1].svalue = String(stack[stackCount - 1].value) + stack[stackCount].svalue;
+						} else if(stack[stackCount - 1].type == 1 && stack[stackCount].type == 0) {
+							//первое значение строковое, второе числовое
+							stack[stackCount - 1].svalue = stack[stackCount - 1].svalue + String(stack[stackCount].value);
+						} else if(stack[stackCount - 1].type == 1 && stack[stackCount].type == 1) {
+							//оба значения строковые
+							stack[stackCount - 1].svalue = stack[stackCount - 1].svalue + stack[stackCount].svalue;
+						}
+						break;
+					}
+				case '-':
+					{
+						stack[stackCount - 1].value = stack[stackCount - 1].value - stack[stackCount].value;
+						stack[stackCount - 1].type = 0;
+						break;
+					}
+				case '*':
+					{
+						stack[stackCount - 1].value = stack[stackCount - 1].value * stack[stackCount].value;
+						stack[stackCount - 1].type = 0;
+						break;
+					}
+				case '/':
+					{
+						stack[stackCount - 1].value = stack[stackCount - 1].value / stack[stackCount].value;
+						stack[stackCount - 1].type = 0;
+						break;
+					}
+				case '>':
+					{
+						stack[stackCount - 1].value = (int) stack[stackCount - 1].value > stack[stackCount].value;
+						stack[stackCount - 1].type = 0;
+						break;
+					}
+				case '<':
+					{
+						stack[stackCount - 1].value = (int) stack[stackCount - 1].value < stack[stackCount].value;
+						stack[stackCount - 1].type = 0;
+						break;
+					}
+				case '!':
+					{
+						stack[stackCount - 1].value = (int) stack[stackCount - 1].value != stack[stackCount].value;
+						stack[stackCount - 1].type = 0;
+						break;
+					}
+				}
+				break;
+			}
+		}
+	}
+	return out;
 }
 
 void setup() {
   Serial.begin(9600);
-  Serial.setTimeout(250);
+  Serial.setTimeout(500);
   Serial.println(F("input 'print(1+2);' for test"));
 }
 
